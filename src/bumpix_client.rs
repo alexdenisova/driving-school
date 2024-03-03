@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
+use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc};
 use color_eyre::{eyre::eyre, Result as AnyResult};
 use regex::Regex;
 use reqwest::blocking::{Client, ClientBuilder};
@@ -25,16 +25,16 @@ pub struct ScheduleResponse {
     #[serde(default)]
     pub time: HashMap<UnixTime, SlotResponse>,
     #[serde(default)]
-    pub events: HashMap<UnixTime, Vec<[u16; 2]>>,
+    pub events: HashMap<UnixTime, Vec<[MidnightTime; 2]>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SlotResponse {
-    pub w: [u16; 2],
+    pub w: [MidnightTime; 2],
 }
 
 #[serde_with::serde_as]
-#[derive(Debug, Clone, Hash, Eq, Deserialize)]
+#[derive(Debug, Clone, Eq, Deserialize)]
 pub struct UnixTime(#[serde_as(as = "TimestampSeconds<String, Flexible>")] DateTime<Utc>);
 
 impl PartialEq for UnixTime {
@@ -43,10 +43,16 @@ impl PartialEq for UnixTime {
     }
 }
 
+impl std::hash::Hash for UnixTime {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
 impl Display for UnixTime {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let UnixTime(time) = &self;
-        write!(f, "{}", time.timestamp().to_string())
+        write!(f, "{}", time.timestamp())
     }
 }
 
@@ -64,7 +70,24 @@ impl UnixTime {
     }
     pub fn add_day(&self) -> Self {
         let UnixTime(time) = &self;
-        UnixTime(time.clone() + Duration::days(1))
+        UnixTime(time.to_owned() + Duration::days(1))
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+/// Minutes after midnight
+pub struct MidnightTime(pub u16);
+
+impl Display for MidnightTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let MidnightTime(time) = &self;
+        write!(f, "{}", time)
+    }
+}
+
+impl From<NaiveTime> for MidnightTime {
+    fn from(value: NaiveTime) -> Self {
+        MidnightTime((value.hour() * 60 + value.minute()) as u16)
     }
 }
 
@@ -105,8 +128,9 @@ impl BumpixClient {
 
     pub fn get_schedule(
         &self,
-        start_time: &UnixTime,
-        end_time: &UnixTime,
+        instructor_id: u32,
+        start_date: &UnixTime,
+        end_date: &UnixTime,
     ) -> AnyResult<ScheduleResponse> {
         let response = self
             .client
@@ -115,13 +139,30 @@ impl BumpixClient {
                     .join("/data/api/site_get_data_for_appointment")?,
             )
             .body(format!(
-                "generalId=242039&insideId=1.1&from={}&to={}&teid=-1",
-                start_time, end_time
+                "generalId={}&insideId=1.1&from={}&to={}&teid=-1",
+                instructor_id, start_date, end_date
             ))
             .send()?
             .error_for_status()?
             .json::<ScheduleResponse>()?;
         log::debug!("Get schedule response:\n{:?}", response);
         Ok(response)
+    }
+
+    pub fn post_appointment(
+        &self,
+        instructor_id: u32,
+        date: &UnixTime,
+        time: &MidnightTime,
+    ) -> AnyResult<()> {
+        self.client
+            .post(self.base_url.join("/data/api/site_appointment")?)
+            .body(format!(
+                "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
+                instructor_id, date, time
+            ))
+            .send()?
+            .error_for_status()?;
+        Ok(())
     }
 }

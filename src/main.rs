@@ -1,4 +1,3 @@
-use chrono::NaiveTime;
 use clap::Parser;
 use color_eyre::Result as AnyResult;
 use dotenvy::dotenv;
@@ -19,10 +18,11 @@ fn main() -> AnyResult<()> {
     let client = cli.bumpix_client()?;
     let start_time = UnixTime::in_two_weeks();
     let end_time = start_time.add_day();
-    let schedule = Schedule::from_response(client.get_schedule(&start_time, &end_time)?);
+    let schedule = Schedule::from_response(client.get_schedule(cli.instructor_id(), &start_time, &end_time)?);
 
-    if schedule.time_is_free(&NaiveTime::from_hms_opt(9, 0, 0).unwrap()) {
-        log::info!("Time is free")
+    if schedule.time_is_free(&cli.time) {
+        client.post_appointment(cli.instructor_id(), &start_time, &cli.time.into())?;
+        log::info!("Created appointment")
     } else {
         log::error!("Could not sign up, {} was not free", cli.time);
     }

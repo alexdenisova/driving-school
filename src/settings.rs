@@ -33,7 +33,7 @@ fn parse_time(arg: &str) -> AnyResult<NaiveTime> {
         .ok_or(eyre!("Wrong time format, should be 00:00"))?;
     let hour = caps.get(1).unwrap().as_str().parse()?;
     let min = caps.get(2).unwrap().as_str().parse()?;
-    Ok(NaiveTime::from_hms_opt(hour, min, 0).ok_or(eyre!("{} is incorrect time", arg))?)
+    NaiveTime::from_hms_opt(hour, min, 0).ok_or(eyre!("{} is incorrect time", arg))
 }
 
 #[derive(Debug, Args)]
@@ -44,6 +44,9 @@ pub struct BumpixArguments {
     /// Password to sign in
     #[arg(long, short = 'p', env = "DS__PASSWORD")]
     password: String,
+    /// Driving instructor id
+    #[arg(long, short = 'd', env = "DS__INSTRUCTOR_ID")]
+    instructor_id: u32,
 }
 
 impl Cli {
@@ -79,5 +82,8 @@ impl Cli {
             &self.bumpix.phone_number,
             &self.bumpix.password,
         )
+    }
+    pub fn instructor_id(&self) -> u32 {
+        self.bumpix.instructor_id
     }
 }
