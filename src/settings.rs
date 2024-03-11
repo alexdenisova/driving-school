@@ -45,7 +45,7 @@ pub struct BumpixArguments {
     #[arg(long, short = 'p', env = "DS__PASSWORD")]
     password: String,
     /// Driving instructor id
-    #[arg(long, short = 'd', env = "DS__INSTRUCTOR_ID")]
+    #[arg(long, env = "DS__INSTRUCTOR_ID")]
     instructor_id: u32,
 }
 

@@ -18,7 +18,11 @@ fn main() -> AnyResult<()> {
     let client = cli.bumpix_client()?;
     let start_time = UnixTime::in_two_weeks();
     let end_time = start_time.add_day();
-    let schedule = Schedule::from_response(client.get_schedule(cli.instructor_id(), &start_time, &end_time)?);
+    let schedule = Schedule::from_response(client.get_schedule(
+        cli.instructor_id(),
+        &start_time,
+        &end_time,
+    )?);
 
     if schedule.time_is_free(&cli.time) {
         client.post_appointment(cli.instructor_id(), &start_time, &cli.time.into())?;
