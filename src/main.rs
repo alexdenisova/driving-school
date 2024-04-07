@@ -11,7 +11,7 @@ mod schedule;
 mod settings;
 
 fn main() -> AnyResult<()> {
-    dotenv()?;
+    let _ = dotenv();
     let cli = Cli::parse();
     cli.setup_logging()?;
 
