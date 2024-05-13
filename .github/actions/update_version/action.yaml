@@ -29,6 +29,7 @@ runs:
       with:
         filters: |
           publish:
+            - '.cargo/**'
             - 'crates/**'
             - 'src/**'
             - 'Cargo.*'
@@ -59,7 +60,6 @@ runs:
             fi
 
             for tag in "${tags[@]}"; do
-              echo $tag
               if [[ "$tag" == "$current" ]]; then
                 tag_prefix="$(date '+%y.%-m.')"
                 if [[ "$current" == "$tag_prefix"* ]]; then
