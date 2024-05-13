@@ -1,6 +1,6 @@
 [package]
 name = "driving-school"
-version = "0.1.0"
+version = "24.5.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,7 +15,11 @@ fern = { version = "0.6.2", features = ["colored"] }
 itertools = "0.12.1"
 log = "0.4.20"
 regex = "1.10.3"
-reqwest = { version = "0.11.24", features = ["blocking", "json", "rustls-tls-native-roots"] }
+reqwest = { version = "0.11.24", features = [
+    "blocking",
+    "json",
+    "rustls-tls-native-roots",
+] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
 serde_with = { version = "3.6.1", features = ["chrono"] }
