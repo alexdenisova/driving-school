@@ -54,20 +54,13 @@ runs:
               | jq -r 'if type=="array" then .[] | .ref | sub("^refs/tags/"; "") else "" end'))
 
             if [ ${#tags[@]} -eq 0 ]; then
-              echo no tags
-              needs_commit=true
-              stop_workflow=true
               tag_prefix="$(date '+%y.%-m.')"
               release_version="$(printf '%s0' "$tag_prefix")"
-            else 
-              echo tags: $tags
             fi
 
             for tag in "${tags[@]}"; do
               echo $tag
               if [[ "$tag" == "$current" ]]; then
-                needs_commit=true
-                stop_workflow=true
                 tag_prefix="$(date '+%y.%-m.')"
                 if [[ "$current" == "$tag_prefix"* ]]; then
                   old_inc=${current#*.*.}
@@ -81,6 +74,11 @@ runs:
                 fi
               fi
             done
+
+            if [[ "$release_version" != "$current" ]]; then
+              needs_commit=true
+              stop_workflow=true
+            fi
 
             if [[ "$needs_commit" == "true" ]]; then
               echo "Computed new release/package version: $release_version"
