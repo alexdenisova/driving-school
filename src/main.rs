@@ -22,7 +22,7 @@ fn main() -> AnyResult<()> {
         cli.instructor_id(),
         &start_time,
         &end_time,
-    )?);
+    )?)?;
 
     if schedule.time_is_free(&cli.time) {
         client.post_appointment(cli.instructor_id(), &start_time, &cli.time.into())?;

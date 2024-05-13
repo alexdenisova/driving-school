@@ -1,4 +1,6 @@
 use chrono::{NaiveDate, NaiveTime};
+use color_eyre::Result as AnyResult;
+use thiserror::Error;
 
 use crate::bumpix_client::{MidnightTime, ScheduleResponse};
 
@@ -18,7 +20,8 @@ pub struct Slot {
 impl Slot {
     pub fn from_midnight_array(array: &[MidnightTime; 2]) -> Self {
         Slot {
-            start: NaiveTime::from_num_seconds_from_midnight_opt(array[0].0 as u32 * 60, 0).unwrap(),
+            start: NaiveTime::from_num_seconds_from_midnight_opt(array[0].0 as u32 * 60, 0)
+                .unwrap(),
             end: NaiveTime::from_num_seconds_from_midnight_opt(array[1].0 as u32 * 60, 0).unwrap(),
         }
     }
@@ -27,18 +30,37 @@ impl Slot {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum ScheduleError {
+    #[error("No open slots")]
+    NoSlots,
+}
+
 impl Schedule {
-    pub fn from_response(response: ScheduleResponse) -> Self {
-        let working_hours = Slot::from_midnight_array(&response.time.values().next().unwrap().w);
+    pub fn from_response(response: ScheduleResponse) -> AnyResult<Self> {
+        println!("{:?}", response);
+        let working_hours = Slot::from_midnight_array(
+            &response
+                .time
+                .values()
+                .next()
+                .ok_or(ScheduleError::NoSlots)?
+                .w,
+        );
         let mut taken_times = Vec::new();
-        for slot in response.events.values().next().unwrap() {
+        for slot in response
+            .events
+            .values()
+            .next()
+            .ok_or(ScheduleError::NoSlots)?
+        {
             taken_times.push(Slot::from_midnight_array(slot));
         }
-        Schedule {
-            date: response.time.keys().next().unwrap().to_naive_date(),
+        Ok(Schedule {
+            date: response.time.keys().next().ok_or(ScheduleError::NoSlots)?.to_naive_date(),
             working_hours,
             taken_times,
-        }
+        })
     }
 
     pub fn time_is_free(&self, time: &NaiveTime) -> bool {
