@@ -63,7 +63,7 @@ impl UnixTime {
     }
     pub fn in_two_weeks() -> Self {
         let naive = NaiveDateTime::new(
-            chrono::offset::Local::now().date_naive() + Duration::weeks(2),
+            chrono::offset::Local::now().date_naive() + Duration::days(15),
             NaiveTime::default(),
         );
         UnixTime(Utc.from_utc_datetime(&naive))

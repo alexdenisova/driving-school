@@ -38,7 +38,6 @@ pub enum ScheduleError {
 
 impl Schedule {
     pub fn from_response(response: ScheduleResponse) -> AnyResult<Self> {
-        println!("{:?}", response);
         let working_hours = Slot::from_midnight_array(
             &response
                 .time
