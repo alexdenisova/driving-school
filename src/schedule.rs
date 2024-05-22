@@ -47,16 +47,18 @@ impl Schedule {
                 .w,
         );
         let mut taken_times = Vec::new();
-        for slot in response
-            .events
-            .values()
-            .next()
-            .ok_or(ScheduleError::NoSlots)?
-        {
-            taken_times.push(Slot::from_midnight_array(slot));
+        if let Some(slots) = response.events.values().next() {
+            for slot in slots {
+                taken_times.push(Slot::from_midnight_array(slot));
+            }
         }
         Ok(Schedule {
-            date: response.time.keys().next().ok_or(ScheduleError::NoSlots)?.to_naive_date(),
+            date: response
+                .time
+                .keys()
+                .next()
+                .ok_or(ScheduleError::NoSlots)?
+                .to_naive_date(),
             working_hours,
             taken_times,
         })
