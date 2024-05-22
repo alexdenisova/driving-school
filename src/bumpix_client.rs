@@ -136,6 +136,8 @@ impl BumpixClient {
         start_date: &UnixTime,
         end_date: &UnixTime,
     ) -> AnyResult<ScheduleResponse> {
+        log::info!("generalId={}&insideId=1.1&from={}&to={}&teid=-1",
+        instructor_id, start_date, end_date);
         let response = self
             .client
             .post(
