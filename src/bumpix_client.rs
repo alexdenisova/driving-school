@@ -72,6 +72,10 @@ impl UnixTime {
         let UnixTime(time) = &self;
         UnixTime(time.to_owned() + Duration::days(1))
     }
+    pub fn subtract_day(&self) -> Self {
+        let UnixTime(time) = &self;
+        UnixTime(time.to_owned() - Duration::days(1))
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -155,14 +159,49 @@ impl BumpixClient {
         date: &UnixTime,
         time: &MidnightTime,
     ) -> AnyResult<()> {
-        self.client
+        log::info!(
+            "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
+            instructor_id,
+            date,
+            time
+        );
+        if self
+            .client
             .post(self.base_url.join("/data/api/site_appointment")?)
             .body(format!(
                 "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
                 instructor_id, date, time
             ))
             .send()?
-            .error_for_status()?;
+            .error_for_status()
+            .is_err()
+        {
+            log::info!("trying next day");
+            if self
+                .client
+                .post(self.base_url.join("/data/api/site_appointment")?)
+                .body(format!(
+                    "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
+                    instructor_id,
+                    date.add_day(),
+                    time
+                ))
+                .send()?
+                .error_for_status()
+                .is_err()
+            {
+                log::info!("trying before day");
+                self.client
+                    .post(self.base_url.join("/data/api/site_appointment")?)
+                    .body(format!(
+                        "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
+                        instructor_id,
+                        date.subtract_day(),
+                        time
+                    ))
+                    .send()?;
+            }
+        }
         Ok(())
     }
 }
