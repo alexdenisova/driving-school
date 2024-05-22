@@ -136,8 +136,6 @@ impl BumpixClient {
         start_date: &UnixTime,
         end_date: &UnixTime,
     ) -> AnyResult<ScheduleResponse> {
-        log::info!("generalId={}&insideId=1.1&from={}&to={}&teid=-1",
-        instructor_id, start_date, end_date);
         let response = self
             .client
             .post(
@@ -161,49 +159,14 @@ impl BumpixClient {
         date: &UnixTime,
         time: &MidnightTime,
     ) -> AnyResult<()> {
-        log::info!(
-            "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
-            instructor_id,
-            date,
-            time
-        );
-        if self
-            .client
+        self.client
             .post(self.base_url.join("/data/api/site_appointment")?)
             .body(format!(
                 "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
                 instructor_id, date, time
             ))
             .send()?
-            .error_for_status()
-            .is_err()
-        {
-            log::info!("trying next day");
-            if self
-                .client
-                .post(self.base_url.join("/data/api/site_appointment")?)
-                .body(format!(
-                    "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
-                    instructor_id,
-                    date.add_day(),
-                    time
-                ))
-                .send()?
-                .error_for_status()
-                .is_err()
-            {
-                log::info!("trying before day");
-                self.client
-                    .post(self.base_url.join("/data/api/site_appointment")?)
-                    .body(format!(
-                        "uid={}&mid=1.1&s=1.1%2C&sc=1%2C&d={}&t={}&te=-1&non=&nop=&oc=",
-                        instructor_id,
-                        date.subtract_day(),
-                        time
-                    ))
-                    .send()?;
-            }
-        }
+            .error_for_status()?;
         Ok(())
     }
 }
